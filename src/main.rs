@@ -1,6 +1,6 @@
 use dotenv;
 use itertools::Itertools;
-use std::{collections::HashMap, fs, thread, time::Instant};
+use std::{collections::HashMap, fs, time::Instant};
 use twitch_irc::{
   login::StaticLoginCredentials, message::ServerMessage, ClientConfig, SecureTCPTransport,
   TwitchIRCClient,
@@ -102,13 +102,29 @@ pub async fn main() {
                         //   client.say(msg.channel_login.clone(), w).await.unwrap();
                         //   thread::sleep(time::Duration::from_millis(250));
                         // }
+                        let mut char_count = 0;
+                        let mut segments: Vec<Vec<String>> = vec![vec![]];
 
-                        println!("{:?}", possible_words);
+                        possible_words.iter().for_each(|x| {
+                          char_count += x.len() + 1;
 
-                        client
-                          .say(msg.channel_login.clone(), possible_words.join(" "))
-                          .await
-                          .expect("Error sending message");
+                          if char_count > 500 {
+                            segments.push(vec![]);
+                            char_count -= 500;
+                          }
+
+                          segments
+                            .last_mut()
+                            .expect("Vec is for some reason empty?")
+                            .push(x.to_owned());
+                        });
+
+                        for segment in segments {
+                          client
+                            .say(msg.channel_login.clone(), segment.join(" "))
+                            .await
+                            .expect("Error sending message");
+                        }
                       }
                       Err(error) => {
                         println!("{:?}", error);
