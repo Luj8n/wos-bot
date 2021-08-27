@@ -1,6 +1,6 @@
 use dotenv;
 use itertools::Itertools;
-use std::{collections::HashMap, fs, thread, time};
+use std::{collections::HashMap, fs, thread, time::Instant};
 use twitch_irc::{
   login::StaticLoginCredentials, message::ServerMessage, ClientConfig, SecureTCPTransport,
   TwitchIRCClient,
@@ -17,6 +17,7 @@ fn word_can_be_formed(letters: &HashMap<u8, usize>, word: &HashMap<u8, usize>) -
 }
 
 fn get_possible_words(word: &str, word_list_choice: &str) -> Result<Vec<String>, std::io::Error> {
+  let start_time = Instant::now();
   let text = fs::read_to_string(format!("./word-lists/{}.txt", word_list_choice))?;
 
   let word_list = text
@@ -37,6 +38,9 @@ fn get_possible_words(word: &str, word_list_choice: &str) -> Result<Vec<String>,
     .sorted()
     .sorted_by(|a, b| Ord::cmp(&a.len(), &b.len()))
     .collect_vec();
+
+  let diff = start_time.elapsed().as_millis();
+  println!("Time taken to guess: {:?}", diff);
 
   Ok(selected)
 }
@@ -67,10 +71,10 @@ pub async fn main() {
     while let Some(message) = incoming_messages.recv().await {
       match message {
         ServerMessage::Privmsg(msg) => {
-          println!(
-            "#{} -> {}: {}",
-            msg.channel_login, msg.sender.name, msg.message_text
-          );
+          // println!(
+          //   "#{} -> {}: {}",
+          //   msg.channel_login, msg.sender.name, msg.message_text
+          // );
 
           let sender_is_mod = msg
             .badges
@@ -92,16 +96,23 @@ pub async fn main() {
               "guess" => {
                 if let Some(word) = words.get(1) {
                   if let Some(word_list_choice) = words.get(2) {
-                    if let Ok(possible_words) = get_possible_words(word, word_list_choice) {
-                      // for w in possible_words {
-                      //   client.say(msg.channel_login.clone(), w).await.unwrap();
-                      //   thread::sleep(time::Duration::from_millis(250));
-                      // }
+                    match get_possible_words(word, word_list_choice) {
+                      Ok(possible_words) => {
+                        // for w in possible_words {
+                        //   client.say(msg.channel_login.clone(), w).await.unwrap();
+                        //   thread::sleep(time::Duration::from_millis(250));
+                        // }
 
-                      client
-                        .say(msg.channel_login.clone(), possible_words.join(" "))
-                        .await
-                        .unwrap();
+                        println!("{:?}", possible_words);
+
+                        client
+                          .say(msg.channel_login.clone(), possible_words.join(" "))
+                          .await
+                          .expect("Error sending message");
+                      }
+                      Err(error) => {
+                        println!("{:?}", error);
+                      }
                     }
                   }
                 }
