@@ -108,7 +108,7 @@ pub async fn main() {
                         possible_words.iter().for_each(|x| {
                           char_count += x.len() + 1;
 
-                          if char_count > 500 {
+                          if char_count >= 500 {
                             segments.push(vec![]);
                             char_count -= 500;
                           }
