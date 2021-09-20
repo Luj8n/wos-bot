@@ -10,3 +10,4 @@ twitch-irc = "3.0.1"
 itertools = "0.10.1"
 tokio = { version = "1.10.0", features = ["full"] }
 dotenv = "0.15.0"
+rayon = "1.5.1"
